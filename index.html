@@ -1,0 +1,771 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>RPG — Do Feudo ao Burgo (Idade Média) • 30 cenas</title>
+  <style>
+    :root{
+      --bg:#0a0e16;
+      --panel:#111a2b;
+      --txt:#eef2ff;
+      --muted:#b8c0e6;
+      --line:#223055;
+      --good:#25d07f;
+      --bad:#ff4d6d;
+      --warn:#ffd166;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      background: radial-gradient(1200px 650px at 18% 0%, #121c33 0%, var(--bg) 60%),
+                  radial-gradient(900px 550px at 85% 20%, #1a1233 0%, rgba(10,14,22,0) 60%),
+                  var(--bg);
+      color:var(--txt);
+    }
+    .wrap{max-width:980px;margin:0 auto;padding:22px 14px 48px;}
+    header{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px;}
+    h1{font-size:1.05rem;margin:0}
+    .small{font-size:.92rem;color:var(--muted);margin-top:6px;line-height:1.35}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .btn{
+      border:1px solid var(--line);
+      background:linear-gradient(180deg, #0f1730, #0b1226);
+      color:var(--txt);
+      padding:10px 12px;
+      border-radius:14px;
+      cursor:pointer;
+      transition:.15s transform,.15s background,.15s opacity;
+      user-select:none;
+    }
+    .btn:hover{transform:translateY(-1px);background:linear-gradient(180deg, #121c3a, #0b1226);}
+    .btn:active{transform:translateY(0px)}
+    .grid{display:grid;gap:12px;grid-template-columns:1.2fr .8fr;}
+    @media (max-width:880px){.grid{grid-template-columns:1fr}}
+    .card{
+      background:rgba(17,26,43,.92);
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:16px;
+      box-shadow:0 10px 30px rgba(0,0,0,.35);
+    }
+    .title{font-size:1.25rem;margin:.2rem 0 .4rem}
+    .meta{color:var(--muted);font-size:.92rem;margin:0 0 10px}
+    .scene-text{line-height:1.58;white-space:pre-wrap}
+    .opts{display:grid;gap:10px;margin-top:14px}
+    .opt{
+      text-align:left;padding:12px 14px;border-radius:14px;
+      border:1px solid var(--line);
+      background:linear-gradient(180deg,#0d152d,#0a1226);
+      color:var(--txt);
+      cursor:pointer;
+      transition:.15s transform,.15s background,.15s opacity;
+    }
+    .opt:hover{transform:translateY(-1px);background:linear-gradient(180deg,#12204a,#0a1226)}
+    .opt:disabled{opacity:.4;cursor:not-allowed;transform:none}
+    .pillbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .pill{
+      border:1px solid var(--line);
+      background:rgba(13,20,35,.8);
+      border-radius:999px;
+      padding:6px 10px;
+      color:var(--muted);
+      font-size:.9rem;
+    }
+    .pill strong{color:var(--txt)}
+    .hr{height:1px;background:var(--line);margin:12px 0}
+    .tag{display:inline-block;padding:2px 8px;border:1px solid var(--line);border-radius:999px;font-size:.85rem;color:var(--muted)}
+    .inv{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    .inv .tag{background:rgba(14,21,39,.6)}
+    .log{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+         font-size:.9rem;color:var(--muted);white-space:pre-wrap}
+    .hint{color:var(--muted);font-size:.92rem;margin-top:8px;line-height:1.35}
+    .warn{color:var(--warn)} .bad{color:var(--bad)} .good{color:var(--good)}
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>RPG — Do Feudo ao Burgo (Idade Média) • 30 cenas</h1>
+        <div class="small">
+          Você é um(a) camponês(esa) no fim do séc. XIV tentando sobreviver e, quem sabe, mudar de vida.
+          O jogo foca em: corvéia/talhas, Igreja, burgos, guildas, justiça e mobilidade social limitada.
+        </div>
+      </div>
+      <div class="row">
+        <button class="btn" id="btnSave">Salvar</button>
+        <button class="btn" id="btnLoad">Carregar</button>
+        <button class="btn" id="btnReset">Reiniciar</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <section class="card">
+        <div class="title" id="sceneTitle"></div>
+        <div class="meta" id="sceneMeta"></div>
+        <div class="scene-text" id="sceneText"></div>
+        <div class="hr"></div>
+        <div class="opts" id="options"></div>
+        <div class="hint" id="hint"></div>
+      </section>
+
+      <aside class="card">
+        <div class="title" style="font-size:1.05rem">Estado</div>
+        <div class="pillbar" id="hud"></div>
+
+        <div class="hr"></div>
+        <div>
+          <span class="tag">Inventário</span>
+          <div class="inv" id="inv"></div>
+        </div>
+
+        <div class="hr"></div>
+        <div>
+          <span class="tag">Última rolagem</span>
+          <div class="log" id="rollLog">—</div>
+        </div>
+
+        <div class="hr"></div>
+        <div class="small">
+          <span class="tag">Sugestão de uso em aula</span>
+          <div style="margin-top:8px;line-height:1.35;color:var(--muted)">
+            Pausas boas pra debate: cenas 2, 8, 10, 18 e finais (21–25, 30).<br>
+            Perguntas: “Que escolhas são reais?”, “O que te prende ao feudo?”, “O que muda no burgo?”
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+<script>
+/**
+ * CENAS: c01..c30 (30 no total)
+ * STATS:
+ * - dia (1..10)
+ * - fome (0..5)
+ * - prata (0..99)
+ * - reputacao (0..6)
+ * - suspeita (0..6)
+ * - fe (0..6)
+ * - saude (0..6)
+ * - oficio (0..6)
+ */
+const story = {
+  start: "c01",
+  initialState: { dia:1, fome:2, prata:1, reputacao:0, suspeita:0, fe:0, saude:3, oficio:0 },
+  initialInventory: [],
+  scenes: {
+    c01:{
+      title:"Aldeia do Vale — Amanhecer",
+      meta:"Cena 1/30 • Corvéia, talha e decisão",
+      text:
+`O feitor anuncia corvéia (trabalho obrigatório) e o coletor lembra a talha (tributo).
+Você sente o estômago apertado. A igreja está aberta. O bosque começa perto. A estrada leva ao burgo (vila murada).
+
+O que você faz?`,
+      options:[
+        { text:"Cumprir a corvéia (evitar problemas)", to:"c02", effects:{dia:+1,fome:+1,reputacao:+1,saude:-1} },
+        { text:"Ir à igreja pedir orientação/ajuda", to:"c03", effects:{dia:+1,fome:+1} },
+        { text:"Coletar algo no bosque (arriscado)", to:"c04", effects:{dia:+1,fome:+1,suspeita:+1} },
+        { text:"Seguir para o burgo agora (ousado)", to:"c07", effects:{dia:+1,fome:+1,suspeita:+1} }
+      ]
+    },
+
+    c02:{
+      title:"Corvéia no campo do senhor",
+      meta:"Cena 2/30 • Obrigações feudais",
+      text:
+`Você trabalha sob vigilância. No fim do dia, recebe um pedaço de pão duro.
+A aldeia te vê “cumpridor(a)”, mas seu corpo sente.`,
+      options:[
+        { text:"Comer o pão e recuperar um pouco", to:"c06", effects:{fome:-1,saude:+1}, addItem:"Pão duro" },
+        { text:"Guardar o pão para trocar depois", to:"c06", addItem:"Pão duro" },
+        { text:"Ir à taverna ouvir boatos", to:"c05", effects:{suspeita:+1} }
+      ]
+    },
+
+    c03:{
+      title:"Igreja: conselho e controle",
+      meta:"Cena 3/30 • Dízimo, caridade e mediação",
+      text:
+`O padre fala de ordem e pecado, mas também de caridade.
+“Posso escrever uma carta… mas isso tem custo: trabalho, doação, ou confiança.”`,
+      options:[
+        { text:"Ajudar na limpeza (ganhar confiança)", to:"c20", effects:{fe:+1,reputacao:+1,saude:-1} },
+        { text:"Doar 1 prata por uma carta (se tiver)", to:"c20", requirement:{prataMin:1}, effects:{prata:-1,fe:+1}, addItem:"Carta do padre" },
+        { text:"Pedir comida (Teste: fe vs DC 10)", check:{stat:"fe",dc:10}, successTo:"c20", failTo:"c06", effects:{saude:-1} },
+        { text:"Sair direto para a estrada", to:"c07", effects:{suspeita:+1} }
+      ]
+    },
+
+    c04:{
+      title:"Bosque: raízes, silêncio e risco",
+      meta:"Cena 4/30 • Sobrevivência",
+      text:
+`Você procura raízes e frutos. Caçar é proibido pelo senhor. Passos ao longe.`,
+      options:[
+        { text:"Coletar raízes e voltar", to:"c06", effects:{fome:-1}, addItem:"Raízes" },
+        { text:"Tentar uma armadilha (Teste: saude vs DC 12)", check:{stat:"saude",dc:12}, successTo:"c06", failTo:"c27",
+          effects:{suspeita:+1}, addItem:"Coelho" },
+        { text:"Voltar rápido antes que notem", to:"c06", effects:{suspeita:+1} }
+      ]
+    },
+
+    c05:{
+      title:"Taverna: boatos e olhares",
+      meta:"Cena 5/30 • Informação tem preço",
+      text:
+`Você ouve rumores de guerra, impostos e uma “doença” em rotas distantes.
+Um mercador te observa. Um guarda também.`,
+      options:[
+        { text:"Sair cedo e não chamar atenção", to:"c06", effects:{suspeita:-1} },
+        { text:"Puxar conversa com o mercador (ganhar contato)", to:"c14", effects:{reputacao:+1,suspeita:+1} },
+        { text:"Beber para esquecer", to:"c06", effects:{fome:+1,saude:-1} }
+      ]
+    },
+
+    c06:{
+      title:"Noite na aldeia",
+      meta:"Cena 6/30 • Segurança x mudança",
+      text:
+`A aldeia adormece. Você pensa: ficar é previsível; partir é perigoso.
+O burgo pode oferecer ofício — ou punição.`,
+      options:[
+        { text:"Ir ao burgo de madrugada (se suspeita baixa)", to:"c07", requirement:{suspeitaMax:2}, effects:{dia:+1,fome:+1} },
+        { text:"Ir mesmo assim (mais risco)", to:"c07", effects:{dia:+1,fome:+1,suspeita:+1} },
+        { text:"Ficar e fazer trabalho extra por moedas", to:"c28", effects:{dia:+1,fome:+1,prata:+1,saude:-1} }
+      ]
+    },
+
+    c07:{
+      title:"Estrada: entre o feudo e o burgo",
+      meta:"Cena 7/30 • Caminho social (não só geográfico)",
+      text:
+`A estrada é lama e frio. Você pode ir só, ou juntar-se a peregrinos (menos suspeita, mais demora).`,
+      options:[
+        { text:"Viajar com peregrinos", to:"c29", effects:{dia:+1,suspeita:-1,saude:-1} },
+        { text:"Ir sozinho(a) e rápido(a)", to:"c08", effects:{dia:+1,saude:-1} },
+        { text:"Voltar: ainda não é hora", to:"c21", effects:{dia:+1} }
+      ]
+    },
+
+    c08:{
+      title:"Portão do burgo: pedágio e guarda",
+      meta:"Cena 8/30 • Entrada controlada",
+      text:
+`O guarda anuncia: “Pedágio para entrar.”
+Forasteiros são vigiados. Documentos raros abrem portas.`,
+      options:[
+        { text:"Pagar 1 prata", to:"c09", requirement:{prataMin:1}, effects:{prata:-1,suspeita:+0} },
+        { text:"Mostrar Carta do padre", to:"c09", requirement:{needItem:"Carta do padre"}, effects:{reputacao:+1,suspeita:-1} },
+        { text:"Tentar entrar escondido(a) (Teste: suspeita vs DC 10)", check:{stat:"suspeita",dc:10}, successTo:"c09", failTo:"c23",
+          effects:{suspeita:+1} },
+        { text:"Discutir com o guarda (péssimo)", to:"c23", effects:{suspeita:+2} }
+      ]
+    },
+
+    c09:{
+      title:"Mercado do burgo: barulho e oportunidades",
+      meta:"Cena 9/30 • Vida urbana",
+      text:
+`No burgo, você vê oficinas, feira, igreja maior e guardas.
+Aqui há trabalho, mas também regras e punições.`,
+      options:[
+        { text:"Procurar um mestre artesão (guilda/ofício)", to:"c10", effects:{dia:+1,fome:+1} },
+        { text:"Fazer bicos no mercado", to:"c11", effects:{dia:+1,fome:+1} },
+        { text:"Buscar hospedaria/mosteiro", to:"c12", effects:{dia:+1,fome:+1} },
+        { text:"Negociar na feira (comprar/vender)", to:"c14", effects:{dia:+1,fome:+1} }
+      ]
+    },
+
+    c10:{
+      title:"Oficina: o mestre e a guilda",
+      meta:"Cena 10/30 • Aprendizagem e controle",
+      text:
+`O mestre te mede com os olhos.
+“Aprendiz precisa de compromisso. E de garantia: moeda, reputação, ou recomendação.”`,
+      options:[
+        { text:"Oferecer 3 prata como taxa", to:"c26", requirement:{prataMin:3}, effects:{prata:-3,reputacao:+2} },
+        { text:"Apresentar a Carta do padre", to:"c26", requirement:{needItem:"Carta do padre"}, effects:{reputacao:+2} },
+        { text:"Convencer na conversa (Teste: reputacao vs DC 13)", check:{stat:"reputacao",dc:13}, successTo:"c26", failTo:"c11",
+          effects:{suspeita:+1} },
+        { text:"Desistir e procurar bicos", to:"c11" }
+      ]
+    },
+
+    c11:{
+      title:"Bicos: trabalho precário",
+      meta:"Cena 11/30 • Ganhar moeda, gastar corpo",
+      text:
+`Você carrega sacos, limpa estábulos, entrega recados. Dá para sobreviver — por enquanto.`,
+      options:[
+        { text:"Trabalho honesto o dia todo (+1 prata, -saude)", to:"c09", effects:{prata:+1,saude:-1,dia:+1} },
+        { text:"Aceitar um pacote “sem perguntas” (contrabando)", to:"c19", effects:{prata:+2,suspeita:+2,dia:+1} },
+        { text:"Dormir em canto do estábulo e recuperar", to:"c15", effects:{saude:+1,fome:+1,dia:+1} }
+      ]
+    },
+
+    c12:{
+      title:"Hospedaria/mosteiro: abrigo e regras",
+      meta:"Cena 12/30 • Proteção e disciplina",
+      text:
+`Um monge diz: “Damos comida e abrigo, mas exigimos trabalho e respeito.”
+É ajuda — e controle.`,
+      options:[
+        { text:"Aceitar trabalho e ficar sob proteção", to:"c24", effects:{fe:+2,fome:-1,saude:+1} },
+        { text:"Só comer e sair (aumenta suspeita)", to:"c09", effects:{fome:-1,suspeita:+1} },
+        { text:"Pedir acesso ao scriptorium (se fé)", to:"c13", requirement:{feMin:1}, effects:{dia:+1} }
+      ]
+    },
+
+    c13:{
+      title:"Scriptorium: letras e contas",
+      meta:"Cena 13/30 • Conhecimento como ferramenta",
+      text:
+`Você vê pergaminhos e tabelas. Aprender a contar e registrar pode abrir portas no burgo.`,
+      options:[
+        { text:"Aprender o básico (oficio +1, reputacao +1)", to:"c14", effects:{oficio:+1,reputacao:+1,dia:+1} },
+        { text:"Copiar um bilhete de recomendação (ganha item)", to:"c14", effects:{reputacao:+1,dia:+1}, addItem:"Bilhete do escriba" },
+        { text:"Voltar ao mercado", to:"c09", effects:{dia:+1} }
+      ]
+    },
+
+    c14:{
+      title:"Feira: troca e sobrevivência",
+      meta:"Cena 14/30 • Economia urbana",
+      text:
+`Você pode vender itens, comprar comida, ou ouvir notícias do mundo (guerra, peste, impostos).`,
+      options:[
+        { text:"Vender Raízes (+1 prata)", to:"c09", requirement:{needItem:"Raízes"}, effects:{prata:+1}, removeItem:"Raízes" },
+        { text:"Vender Coelho (+2 prata)", to:"c09", requirement:{needItem:"Coelho"}, effects:{prata:+2}, removeItem:"Coelho" },
+        { text:"Comprar sopa (1 prata, -fome)", to:"c15", requirement:{prataMin:1}, effects:{prata:-1,fome:-2,saude:+1,dia:+1} },
+        { text:"Ouvir notícias e seguir o fluxo", to:"c17", effects:{dia:+1,suspeita:+0} }
+      ]
+    },
+
+    c15:{
+      title:"Rumores de peste",
+      meta:"Cena 15/30 • Medo e boatos",
+      text:
+`No burgo, pessoas falam de uma doença em rotas comerciais.
+Alguns dizem “castigo”; outros, “contágio”. O medo muda o comportamento das pessoas.`,
+      options:[
+        { text:"Ignorar e continuar trabalhando", to:"c16", effects:{dia:+1} },
+        { text:"Buscar uma curandeira (ganhar preparo)", to:"c16", effects:{reputacao:+1,dia:+1} },
+        { text:"Ficar no mosteiro (reduz exposição)", to:"c12", effects:{suspeita:-1,dia:+1} },
+        { text:"Sair do burgo por um tempo", to:"c29", effects:{dia:+1,saude:-1} }
+      ]
+    },
+
+    c16:{
+      title:"Corpo e risco",
+      meta:"Cena 16/30 • Saúde como limite",
+      text:
+`Você sente o peso dos dias. No mundo medieval, doença e fome mudam destinos rapidamente.`,
+      options:[
+        { text:"Descansar no mosteiro", to:"c12", effects:{saude:+1,fome:+0,dia:+1} },
+        { text:"Trabalhar mesmo cansado(a) (+prata, -saude)", to:"c11", effects:{prata:+1,saude:-2,dia:+1} },
+        { text:"Pedir ajuda religiosa (se fé)", to:"c12", requirement:{feMin:1}, effects:{saude:+1,fome:-1,dia:+1} },
+        { text:"Se a saúde piorou muito, encerrar a semana (final)", to:"c25", requirement:{saudeMax:1}, effects:{dia:+1} }
+      ]
+    },
+
+    c17:{
+      title:"Convocação: guerra do senhor",
+      meta:"Cena 17/30 • Levas e coerção",
+      text:
+`Um mensageiro anuncia recrutamento. Quem recusa pode sofrer sanções.
+Guerra é política, tributo e sobrevivência.`,
+      options:[
+        { text:"Alistar-se (ganha soldo, perde saúde)", to:"c18", effects:{prata:+1,saude:-1,suspeita:-1,dia:+1} },
+        { text:"Pagar para evitar (2 prata)", to:"c18", requirement:{prataMin:2}, effects:{prata:-2,reputacao:-1,dia:+1} },
+        { text:"Argumentar que é aprendiz/útil (se ofício)", to:"c18", requirement:{oficioMin:2}, effects:{reputacao:+1,dia:+1} },
+        { text:"Fugir do burgo", to:"c29", effects:{suspeita:+1,dia:+1} }
+      ]
+    },
+
+    c18:{
+      title:"Justiça urbana: multa, fiador ou cadeia",
+      meta:"Cena 18/30 • Lei como ordem social",
+      text:
+`No burgo, guardas te param: “Documentos? Ocupação? Origem?”
+Aqui, reputação e moeda são chaves.`,
+      options:[
+        { text:"Pagar multa (1 prata) e baixar suspeita", to:"c09", requirement:{prataMin:1}, effects:{prata:-1,suspeita:-2,dia:+1} },
+        { text:"Buscar um fiador (Teste: reputacao vs DC 12)", check:{stat:"reputacao",dc:12}, successTo:"c09", failTo:"c23",
+          effects:{dia:+1} },
+        { text:"Apelar ao mosteiro (se fé)", to:"c12", requirement:{feMin:1}, effects:{suspeita:-1,dia:+1} },
+        { text:"Se a suspeita está altíssima, você é detido(a)", to:"c23", requirement:{suspeitaMin:5}, effects:{dia:+1} }
+      ]
+    },
+
+    c19:{
+      title:"O pacote do mercador",
+      meta:"Cena 19/30 • Contrabando e risco",
+      text:
+`O mercador diz: “Entregue isso e você ganha mais.”
+Você não sabe o conteúdo. Se der errado, sobra pra você.`,
+      options:[
+        { text:"Entregar e sumir (mais risco depois)", to:"c18", effects:{prata:+1,suspeita:+1,dia:+1} },
+        { text:"Recusar na última hora", to:"c11", effects:{suspeita:+1,dia:+1} },
+        { text:"Denunciar (Teste: reputacao vs DC 14)", check:{stat:"reputacao",dc:14}, successTo:"c09", failTo:"c23",
+          effects:{dia:+1} },
+        { text:"Esconder no mosteiro (péssimo se descoberto)", to:"c12", effects:{suspeita:+2,dia:+1} }
+      ]
+    },
+
+    c20:{
+      title:"Sacristia: carta e recomendação",
+      meta:"Cena 20/30 • Escrita como poder",
+      text:
+`O padre te observa: “Vou escrever algo simples. Uma palavra assinada pesa.”
+Você sente que a escrita não é neutra: ela define quem é ‘confiável’.`,
+      options:[
+        { text:"Receber a carta e partir ao burgo", to:"c07", effects:{dia:+1,fome:+1}, addItem:"Carta do padre" },
+        { text:"Ficar mais um dia ajudando (aumenta fé e reputação)", to:"c03", effects:{fe:+1,reputacao:+1,dia:+1,fome:+1} },
+        { text:"Voltar para casa e decidir depois", to:"c06", effects:{dia:+1} }
+      ]
+    },
+
+    c21:{
+      title:"Final: Permanecer no feudo",
+      meta:"Cena 21/30 • Segurança x dependência",
+      text:
+`Você escolhe a previsibilidade. O feudo oferece sobrevivência com obrigações e pouca autonomia.
+
+Debate:
+• Como corvéia/talhas mantinham a ordem?
+• O que torna “partir” tão difícil?`,
+      options:[ { text:"Reiniciar", reset:true } ]
+    },
+
+    c22:{
+      title:"Final: Aprendiz no burgo",
+      meta:"Cena 22/30 • Mobilidade social limitada",
+      text:
+`Você entra como aprendiz. A vida continua dura, mas agora há ofício, rede e algum futuro possível.
+
+Debate:
+• Guildas protegiam ou controlavam?
+• O que muda do feudo para o burgo?`,
+      options:[ { text:"Reiniciar", reset:true } ]
+    },
+
+    c23:{
+      title:"Final: Prisão/detenção",
+      meta:"Cena 23/30 • Coerção e exemplo",
+      text:
+`Você é detido(a). O burgo protege sua ordem: pedágio, vigilância, punição.
+
+Debate:
+• Quem define a lei? Para quem ela funciona?
+• Qual diferença entre justiça feudal e urbana?`,
+      options:[ { text:"Reiniciar", reset:true } ]
+    },
+
+    c24:{
+      title:"Final: Refúgio no mosteiro",
+      meta:"Cena 24/30 • Ajuda e disciplina",
+      text:
+`Você fica sob proteção do clero: alimento e abrigo, em troca de regras e trabalho.
+
+Debate:
+• Qual papel social da Igreja?
+• Ajuda e controle podem coexistir?`,
+      options:[ { text:"Reiniciar", reset:true } ]
+    },
+
+    c25:{
+      title:"Final: Semana agridoce no burgo",
+      meta:"Cena 25/30 • Sobreviver sem ascender",
+      text:
+`Você sobrevive com bicos e favores, mas sem estabilidade. O burgo é promessa e precariedade.
+
+Debate:
+• “Liberdade” urbana vale para todos?
+• O que significa viver sem terra e sem guilda?`,
+      options:[ { text:"Reiniciar", reset:true } ]
+    },
+
+    c26:{
+      title:"A prova do mestre",
+      meta:"Cena 26/30 • Porta estreita",
+      text:
+`O mestre propõe: “Mostre disciplina. Traga garantia. Traga alguém que responda por você.”
+Se sua suspeita for alta, guardas podem aparecer.`,
+      options:[
+        { text:"Assinar contrato de aprendiz", to:"c22", effects:{oficio:+1,reputacao:+2,suspeita:-1} },
+        { text:"Aceitar trabalho sem guilda (vida precária)", to:"c25", effects:{prata:+1,saude:-1} },
+        { text:"Recusar e voltar aos bicos", to:"c11", effects:{suspeita:+1} },
+        { text:"Se a suspeita subiu, resolver com a justiça", to:"c18", requirement:{suspeitaMin:4} }
+      ]
+    },
+
+    c27:{
+      title:"O feitor te reconhece",
+      meta:"Cena 27/30 • Caça a ‘desobedientes’",
+      text:
+`No caminho do bosque, alguém grita seu nome. “Você devia estar no campo do senhor!”
+A vigilância do feudo não termina na aldeia.`,
+      options:[
+        { text:"Correr (Teste: saude vs DC 12)", check:{stat:"saude",dc:12}, successTo:"c06", failTo:"c23", effects:{suspeita:+1} },
+        { text:"Mostrar a Carta do padre (se tiver)", to:"c06", requirement:{needItem:"Carta do padre"}, effects:{suspeita:-1,reputacao:+1} },
+        { text:"Fazer acordo: trabalhar em dobro amanhã", to:"c02", effects:{reputacao:-1,saude:-1,dia:+1} },
+        { text:"Voltar ao feudo e encerrar", to:"c21", effects:{dia:+1} }
+      ]
+    },
+
+    c28:{
+      title:"Aldeia: trabalho extra por moedas",
+      meta:"Cena 28/30 • Estratégia lenta",
+      text:
+`Você ganha algumas moedas com tarefas menores. É pouco, mas pode financiar a ida ao burgo.`,
+      options:[
+        { text:"Juntar moeda e ir ao burgo", to:"c07", effects:{dia:+1,fome:+1} },
+        { text:"Comprar comida (1 prata)", to:"c06", requirement:{prataMin:1}, effects:{prata:-1,fome:-2,saude:+1} },
+        { text:"Ajudar um vizinho e ganhar reputação", to:"c03", effects:{reputacao:+1,dia:+1} },
+        { text:"Desistir do burgo", to:"c21", effects:{dia:+1} }
+      ]
+    },
+
+    c29:{
+      title:"Peregrinos: estrada, fé e troca",
+      meta:"Cena 29/30 • Redes fora do feudo",
+      text:
+`Com peregrinos, você aprende rotas, canções e notícias. A estrada tem perigo e oportunidade.`,
+      options:[
+        { text:"Chegar ao burgo por outra entrada (menos suspeita)", to:"c09", effects:{suspeita:-1,dia:+1} },
+        { text:"Doar 1 prata e receber um amuleto", to:"c29", requirement:{prataMin:1}, effects:{prata:-1,fe:+1}, addItem:"Amuleto" },
+        { text:"Adoecer na estrada (Teste: saude vs DC 11)", check:{stat:"saude",dc:11}, successTo:"c08", failTo:"c25",
+          effects:{dia:+1} },
+        { text:"Voltar para casa", to:"c21", effects:{dia:+1} }
+      ]
+    },
+
+    c30:{
+      title:"Epílogo: entre estruturas e escolhas",
+      meta:"Cena 30/30 • Fecho reflexivo",
+      text:
+`Você percebe que “escolhas” no mundo medieval não são livres: são cercadas por fome, lei, terra, fé e poder.
+Ainda assim, pessoas negociam, constroem redes e procuram brechas.
+
+Use este epílogo no seu e-book para:
+• listar conceitos (feudo, corvéia, talha, burgo, guilda, justiça),
+• propor perguntas,
+• e sugerir fontes (imagens de iluminuras, mapas, trechos de crônicas).`,
+      options:[ { text:"Reiniciar", reset:true } ]
+    }
+  }
+};
+
+/* ====== MOTOR ====== */
+const hudEl = document.getElementById("hud");
+const invEl = document.getElementById("inv");
+const titleEl = document.getElementById("sceneTitle");
+const metaEl = document.getElementById("sceneMeta");
+const textEl = document.getElementById("sceneText");
+const optsEl = document.getElementById("options");
+const hintEl = document.getElementById("hint");
+const rollLogEl = document.getElementById("rollLog");
+
+const KEY = "rpg_idade_media_30cenas_save_v1";
+
+let state = clone(story.initialState);
+let inventory = [...story.initialInventory];
+let current = story.start;
+
+function clone(obj){ return JSON.parse(JSON.stringify(obj)); }
+function hasItem(item){ return inventory.includes(item); }
+
+function clampStats(){
+  const clamp = (k,min,max)=> state[k] = Math.max(min, Math.min(max, Number(state[k] ?? 0)));
+  clamp("dia", 1, 10);
+  clamp("fome", 0, 5);
+  clamp("prata", 0, 99);
+  clamp("reputacao", 0, 6);
+  clamp("suspeita", 0, 6);
+  clamp("fe", 0, 6);
+  clamp("saude", 0, 6);
+  clamp("oficio", 0, 6);
+}
+
+function meetsRequirement(req){
+  if(!req) return true;
+
+  const stats = ["dia","fome","prata","reputacao","suspeita","fe","saude","oficio"];
+  for(const s of stats){
+    const minK = s + "Min";
+    const maxK = s + "Max";
+    const v = Number(state[s] ?? 0);
+    if(req[minK] != null && v < req[minK]) return false;
+    if(req[maxK] != null && v > req[maxK]) return false;
+  }
+  if(req.needItem && !hasItem(req.needItem)) return false;
+  return true;
+}
+
+function applyEffects(effects){
+  if(!effects) return;
+  for(const [k,delta] of Object.entries(effects)){
+    state[k] = (state[k] ?? 0) + delta;
+  }
+  clampStats();
+}
+
+function addItem(item){
+  if(!item) return;
+  if(!inventory.includes(item)) inventory.push(item);
+}
+function removeItem(item){
+  if(!item) return;
+  inventory = inventory.filter(x => x !== item);
+}
+
+function rollD20(){ return Math.floor(Math.random()*20)+1; }
+function performCheck(check){
+  const die = rollD20();
+  const statName = check.stat;
+  const statVal = Number(state[statName] ?? 0);
+  const total = die + statVal;
+  const ok = total >= check.dc;
+  rollLogEl.textContent =
+    `d20=${die} + ${statName}(${statVal}) = ${total}  →  DC ${check.dc}  →  ${ok ? "SUCESSO" : "FALHA"}`;
+  return ok;
+}
+
+function renderHud(){
+  hudEl.innerHTML = "";
+  const def = [
+    ["dia","Dia"],
+    ["fome","Fome"],
+    ["prata","Prata"],
+    ["reputacao","Reputação"],
+    ["suspeita","Suspeita"],
+    ["fe","Fé"],
+    ["saude","Saúde"],
+    ["oficio","Ofício"]
+  ];
+  def.forEach(([k,label])=>{
+    const pill = document.createElement("div");
+    pill.className = "pill";
+    pill.innerHTML = `${label}: <strong>${state[k]}</strong>`;
+    hudEl.appendChild(pill);
+  });
+
+  invEl.innerHTML = "";
+  if(inventory.length === 0){
+    const t = document.createElement("span");
+    t.className = "tag";
+    t.textContent = "vazio";
+    invEl.appendChild(t);
+  } else {
+    inventory.forEach(it=>{
+      const t = document.createElement("span");
+      t.className = "tag";
+      t.textContent = it;
+      invEl.appendChild(t);
+    });
+  }
+}
+
+function go(to, {reset=false}={}){
+  if(reset){
+    state = clone(story.initialState);
+    inventory = [...story.initialInventory];
+    current = story.start;
+    rollLogEl.textContent = "—";
+  } else if(to) {
+    current = to;
+  }
+  render();
+}
+
+function render(){
+  const scene = story.scenes[current];
+  if(!scene){ alert("Cena não encontrada: " + current); return; }
+
+  clampStats();
+  renderHud();
+
+  titleEl.textContent = scene.title || "";
+  metaEl.textContent = scene.meta || "";
+  textEl.textContent = scene.text || "";
+
+  optsEl.innerHTML = "";
+  hintEl.textContent = "";
+
+  let blockedCount = 0;
+
+  (scene.options || []).forEach(opt=>{
+    const b = document.createElement("button");
+    b.className = "opt";
+
+    const okReq = meetsRequirement(opt.requirement);
+    if(!okReq) blockedCount++;
+
+    let label = opt.text || "Escolher";
+    if(opt.check) label += `  —  (Teste: ${opt.check.stat} vs DC ${opt.check.dc})`;
+    b.textContent = label;
+    b.disabled = !okReq;
+
+    b.onclick = () => {
+      if(opt.reset){
+        go(story.start, {reset:true});
+        return;
+      }
+      if(opt.addItem) addItem(opt.addItem);
+      if(opt.removeItem) removeItem(opt.removeItem);
+      if(opt.effects) applyEffects(opt.effects);
+
+      if(opt.check){
+        const ok = performCheck(opt.check);
+        go(ok ? opt.successTo : opt.failTo);
+        return;
+      }
+      go(opt.to);
+    };
+
+    optsEl.appendChild(b);
+  });
+
+  if(blockedCount){
+    hintEl.innerHTML = `Algumas escolhas estão <span class="warn">bloqueadas</span> por condições (stats mínimos/máximos ou item necessário).`;
+  }
+  if(state.suspeita >= 5){
+    hintEl.innerHTML += (hintEl.innerHTML ? "<br>" : "") +
+      `<span class="bad">Atenção:</span> suspeita muito alta. Guardas/justiça podem te parar a qualquer momento.`;
+  }
+  if(state.fome >= 5){
+    hintEl.innerHTML += (hintEl.innerHTML ? "<br>" : "") +
+      `<span class="bad">Atenção:</span> fome crítica. Você precisa comer para manter opções viáveis.`;
+  }
+  if(state.saude <= 1){
+    hintEl.innerHTML += (hintEl.innerHTML ? "<br>" : "") +
+      `<span class="bad">Atenção:</span> saúde muito baixa. Descanso/abrigo é prioridade.`;
+  }
+}
+
+/* ====== SALVAR/CARREGAR ====== */
+document.getElementById("btnSave").onclick = () => {
+  localStorage.setItem(KEY, JSON.stringify({ current, state, inventory }));
+  alert("Jogo salvo no navegador!");
+};
+document.getElementById("btnLoad").onclick = () => {
+  const raw = localStorage.getItem(KEY);
+  if(!raw) return alert("Nenhum save encontrado.");
+  const data = JSON.parse(raw);
+  current = data.current;
+  state = data.state;
+  inventory = data.inventory || [];
+  clampStats();
+  render();
+};
+document.getElementById("btnReset").onclick = () => go(story.start, {reset:true});
+
+render();
+</script>
+</body>
+</html>
